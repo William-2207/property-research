@@ -36,9 +36,9 @@
 
   <!-- Log files in the project logs/ directory -->
   <key>StandardOutPath</key>
-  <string>/Users/william/Desktop/ClaudeCode/logs/monthly.stdout.log</string>
+  <string>/Users/william/Desktop/Property Research/logs/monthly.stdout.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/william/Desktop/ClaudeCode/logs/monthly.stderr.log</string>
+  <string>/Users/william/Desktop/Property Research/logs/monthly.stderr.log</string>
 
   <!-- Restart on crash with a 60-second throttle -->
   <key>ThrottleInterval</key>

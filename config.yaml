@@ -68,8 +68,8 @@ scrape_schedule:
   listings: weekly
   fundamentals: monthly
 
-output_dir: ./outputs
-db_path: ./data/property_agent.db
+output_dir: /Users/william/Desktop/Property Research/outputs
+db_path: /Users/william/Desktop/Property Research/data/property_agent.db
 
 api_keys:
   claude_api_key: ""
@@ -79,7 +79,7 @@ playwright:
   min_delay_s: 3.0
   max_delay_s: 8.0
   max_pages_per_suburb: 10
-  raw_html_dir: ./data/raw_html
+  raw_html_dir: /Users/william/Desktop/Property Research/data/raw_html
 
 sydney:
   lga_radius_km: 60
@@ -95,5 +95,5 @@ melbourne:
 
 logging:
   level: INFO
-  file: ./data/agent.log
+  file: /Users/william/Desktop/Property Research/logs/agent.log
   rotation: "10 MB"

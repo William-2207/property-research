@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+  <!-- Identity -->
+  <key>Label</key>
+  <string>com.propertyagent.weekly</string>
+
+  <!-- Script to run — shell wrapper activates the venv before calling Python -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/william/Desktop/ClaudeCode/run_weekly.sh</string>
+  </array>
+
+  <!-- Working directory (launchd does not inherit a shell cwd) -->
+  <key>WorkingDirectory</key>
+  <string>/Users/william/Desktop/ClaudeCode</string>
+
+  <!-- Schedule: every Monday at 07:00 local time -->
+  <!-- Weekday 1 = Monday (0=Sunday … 6=Saturday) -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- Do NOT run immediately when the plist is loaded -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- Log files in the project logs/ directory -->
+  <key>StandardOutPath</key>
+  <string>/Users/william/Desktop/ClaudeCode/logs/weekly.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/william/Desktop/ClaudeCode/logs/weekly.stderr.log</string>
+
+  <!-- Restart on crash with a 60-second throttle -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+
+  <!-- Inherit a usable PATH that includes /usr/local/bin and Homebrew -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+    <key>HOME</key>
+    <string>/Users/william</string>
+  </dict>
+
+</dict>
+</plist>

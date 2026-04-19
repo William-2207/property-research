@@ -27,6 +27,12 @@ if [ ! -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
   exit 1
 fi
 
+# Ensure Playwright's Chromium browser is installed
+echo "Checking Playwright browser installation..."
+"$SCRIPT_DIR/.venv/bin/playwright" install chromium --with-deps 2>/dev/null || \
+  "$SCRIPT_DIR/.venv/bin/python" -m playwright install chromium
+echo "  ✓ Playwright Chromium ready"
+
 mkdir -p "$LAUNCH_AGENTS"
 mkdir -p "$SCRIPT_DIR/logs"
 

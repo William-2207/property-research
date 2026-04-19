@@ -89,7 +89,7 @@ def main() -> None:
 
 def _run_test(cfg) -> None:
     """Step 9 test run: 5 Sydney suburbs, verify end-to-end pipeline."""
-    logger.info("=== TEST RUN: 5 Sydney suburbs ===")
+    logger.info("=== TEST RUN: 5 Sydney suburbs (Playwright scraping) ===")
 
     original_cities = cfg.cities
     cfg.cities = ["sydney"]
@@ -102,52 +102,66 @@ def _run_test(cfg) -> None:
         ("Auburn", "NSW"),
     ]
 
-    from src.scrapers.fundamentals import (
-        DomainApiClient, _process_suburb, SYDNEY_SUBURBS_SAMPLE
+    from src.scrapers.fundamentals import _process_suburb
+    from src.scrapers.listings import (
+        scrape_domain_suburb, scrape_rea_suburb, _upsert_listing, _get_suburb_avg_dom
     )
-    from src.database.session import get_session
+    from src.scrapers.playwright_base import PlaywrightSession, random_delay
+    from src.database.session import get_session, upsert_suburb as _upsert_suburb
     from datetime import datetime
 
     snapshot_month = datetime.utcnow().strftime("%Y-%m")
 
-    domain_client = None
-    if cfg.api_keys.domain_client_id and cfg.api_keys.domain_client_secret:
-        domain_client = DomainApiClient(
-            cfg.api_keys.domain_client_id,
-            cfg.api_keys.domain_client_secret,
-        )
-        logger.info("Domain API client ready")
-    else:
-        logger.warning("No Domain API keys — fundamentals will have limited data")
+    logger.info("Step 2: Suburb fundamentals scrape (5 suburbs via Playwright)")
+    with PlaywrightSession() as pw:
+        for suburb_name, state in TEST_SUBURBS:
+            try:
+                _process_suburb(cfg, suburb_name, state, "sydney", snapshot_month, pw)
+                logger.info(f"  ✓ Fundamentals: {suburb_name}")
+            except Exception as e:
+                logger.error(f"  ✗ Fundamentals error {suburb_name}: {e}")
+            random_delay(3, 7)
 
-    logger.info("Step 2: Suburb fundamentals scrape (5 suburbs)")
-    for suburb_name, state in TEST_SUBURBS:
-        try:
-            _process_suburb(cfg, suburb_name, state, "sydney", snapshot_month, domain_client)
-            logger.info(f"  ✓ Fundamentals: {suburb_name}")
-        except Exception as e:
-            logger.error(f"  ✗ Fundamentals error {suburb_name}: {e}")
+    logger.info("Step 3: Listings scrape (5 suburbs via Playwright)")
+    with PlaywrightSession() as pw:
+        for suburb_name, state in TEST_SUBURBS:
+            all_raw = []
+            for asset_type in ["house", "unit"]:
+                try:
+                    got = scrape_domain_suburb(
+                        pw, suburb_name, state, "sydney",
+                        cfg.price_caps.listing_max_price, asset_type
+                    )
+                    all_raw.extend(got)
+                    logger.info(f"  Domain {suburb_name} {asset_type}: {len(got)}")
+                except Exception as e:
+                    logger.error(f"  ✗ Domain error {suburb_name} {asset_type}: {e}")
+                random_delay(3, 7)
 
-    logger.info("Step 3: Listings scrape (5 suburbs)")
-    from src.scrapers.listings import REAListingsScraper, upsert_listing, _get_suburb_avg_dom
-    from src.database.session import get_session
-    from src.database.session import upsert_suburb as _upsert_suburb
+                try:
+                    got_rea = scrape_rea_suburb(
+                        pw, suburb_name, state, "sydney",
+                        cfg.price_caps.listing_max_price, asset_type
+                    )
+                    seen = {r["external_id"] for r in all_raw}
+                    new_rea = [r for r in got_rea if r["external_id"] not in seen]
+                    all_raw.extend(new_rea)
+                    logger.info(f"  REA {suburb_name} {asset_type}: {len(got_rea)} (+{len(new_rea)})")
+                except Exception as e:
+                    logger.error(f"  ✗ REA error {suburb_name} {asset_type}: {e}")
+                random_delay(3, 7)
 
-    rea = REAListingsScraper(cfg)
-    for suburb_name, state in TEST_SUBURBS:
-        try:
-            listings_raw = rea.scrape_suburb(suburb_name, state, "sydney")
             with get_session() as session:
                 suburb_obj = _upsert_suburb(session, suburb_name, state, "sydney")
                 count = 0
-                for raw in listings_raw:
-                    if raw.get("list_price") and raw["list_price"] <= cfg.price_caps.listing_max_price:
-                        avg_dom = _get_suburb_avg_dom(session, suburb_obj.id, raw.get("asset_type", "house"))
-                        upsert_listing(session, raw, suburb_obj.id, avg_dom)
+                for raw in all_raw:
+                    if raw.get("list_price", 0) <= cfg.price_caps.listing_max_price:
+                        avg_dom = _get_suburb_avg_dom(
+                            session, suburb_obj.id, raw.get("asset_type", "house")
+                        )
+                        _upsert_listing(session, raw, suburb_obj.id, avg_dom)
                         count += 1
-            logger.info(f"  ✓ Listings: {suburb_name} — {count} ingested")
-        except Exception as e:
-            logger.error(f"  ✗ Listings error {suburb_name}: {e}")
+            logger.info(f"  ✓ Listings persisted: {suburb_name} — {count}")
 
     logger.info("Step 4: Spatial enrichment (station distance only for test)")
     from src.enrichment.station_distance import load_stations_for_city

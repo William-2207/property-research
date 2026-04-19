@@ -87,9 +87,16 @@ class CityConfig:
 
 
 @dataclass
+class PlaywrightConfig:
+    headless: bool = True
+    min_delay_s: float = 3.0
+    max_delay_s: float = 8.0
+    max_pages_per_suburb: int = 10
+    raw_html_dir: Path = Path("./data/raw_html")
+
+
+@dataclass
 class ApiKeys:
-    domain_client_id: str = ""
-    domain_client_secret: str = ""
     claude_api_key: str = ""
 
 
@@ -110,6 +117,7 @@ class Config:
     output_dir: Path = Path("./outputs")
     db_path: Path = Path("./data/property_agent.db")
     api_keys: ApiKeys = field(default_factory=ApiKeys)
+    playwright: PlaywrightConfig = field(default_factory=PlaywrightConfig)
     sydney: CityConfig = field(default_factory=CityConfig)
     melbourne: CityConfig = field(default_factory=CityConfig)
     log_level: str = "INFO"
@@ -169,9 +177,16 @@ def load_config(path: str = "config.yaml") -> Config:
 
     if ak := raw.get("api_keys"):
         cfg.api_keys = ApiKeys(
-            domain_client_id=ak.get("domain_client_id", ""),
-            domain_client_secret=ak.get("domain_client_secret", ""),
             claude_api_key=ak.get("claude_api_key", ""),
+        )
+
+    if pw := raw.get("playwright"):
+        cfg.playwright = PlaywrightConfig(
+            headless=pw.get("headless", True),
+            min_delay_s=pw.get("min_delay_s", 3.0),
+            max_delay_s=pw.get("max_delay_s", 8.0),
+            max_pages_per_suburb=pw.get("max_pages_per_suburb", 10),
+            raw_html_dir=Path(pw.get("raw_html_dir", "./data/raw_html")),
         )
 
     if sy := raw.get("sydney"):

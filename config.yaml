@@ -72,9 +72,14 @@ output_dir: ./outputs
 db_path: ./data/property_agent.db
 
 api_keys:
-  domain_client_id: ""
-  domain_client_secret: ""
   claude_api_key: ""
+
+playwright:
+  headless: true
+  min_delay_s: 3.0
+  max_delay_s: 8.0
+  max_pages_per_suburb: 10
+  raw_html_dir: ./data/raw_html
 
 sydney:
   lga_radius_km: 60
